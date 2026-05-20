@@ -97,3 +97,101 @@ print(metrics.classification_report(y_test, yout))
 
 print("Matriz de Confusión Resultante:")
 print(metrics.confusion_matrix(y_test, yout))
+
+# =====================================================================
+# 7. INTEGRACIÓN: GUI + MODELO (Integrante 4)
+# =====================================================================
+import tkinter as tk
+from tkinter import messagebox
+from PIL import Image, ImageOps, ImageDraw
+import traceback
+
+
+def preprocesar_imagen(img_pil):
+    img = img_pil.convert('L')
+    img = ImageOps.invert(img)
+    img = img.resize((8, 8), Image.LANCZOS)
+    arr = (np.array(img, dtype=np.float32) / 255.0) * 16.0
+    return arr.flatten().reshape(1, -1)
+
+
+def predecir_digito(img_pil):
+    vector = preprocesar_imagen(img_pil)
+    vector_escalado = scaler.transform(vector)
+    prediccion = clf.predict(vector_escalado)[0]
+    confianza = clf.predict_proba(vector_escalado)[0][prediccion] * 100
+    return int(prediccion), float(confianza)
+
+
+class AppDigitos:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Reconocimiento de Dígitos")
+        self.root.resizable(False, False)
+        self.tam = 280
+
+        self.canvas = tk.Canvas(root, width=self.tam, height=self.tam,
+                                bg='white', cursor='pencil')
+        self.canvas.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
+        self.canvas.bind("<B1-Motion>", self.dibujar)
+
+        self.imagen = Image.new("L", (self.tam, self.tam), color=255)
+        self.draw = ImageDraw.Draw(self.imagen)
+
+        tk.Button(root, text="Predecir", width=12,
+                  command=self.on_predecir).grid(row=1, column=0, pady=5)
+        tk.Button(root, text="Limpiar", width=12,
+                  command=self.on_limpiar).grid(row=1, column=1, pady=5)
+        tk.Button(root, text="Salir", width=12,
+                  command=root.destroy).grid(row=1, column=2, pady=5)
+
+        self.resultado = tk.Label(root, text="Dibuja un dígito (0-9)",
+                                  font=("Arial", 16))
+        self.resultado.grid(row=2, column=0, columnspan=3, pady=10)
+        self.hay_trazo = False
+
+    def dibujar(self, evento):
+        r = 10
+        x, y = evento.x, evento.y
+        self.canvas.create_oval(x - r, y - r, x + r, y + r,
+                                fill='black', outline='black')
+        self.draw.ellipse([x - r, y - r, x + r, y + r], fill=0)
+        self.hay_trazo = True
+
+    def on_limpiar(self):
+        self.canvas.delete("all")
+        self.imagen.paste(255, [0, 0, self.tam, self.tam])
+        self.resultado.config(text="Dibuja un dígito (0-9)")
+        self.hay_trazo = False
+
+    def on_predecir(self):
+        try:
+            if not self.hay_trazo:
+                messagebox.showwarning("Entrada vacía",
+                                       "Primero dibuja un dígito.")
+                return
+            digito, confianza = predecir_digito(self.imagen)
+            self.resultado.config(
+                text=f"Predicción: {digito}   (confianza: {confianza:.1f}%)"
+            )
+        except Exception as e:
+            traceback.print_exc()
+            messagebox.showerror("Error en la predicción",
+                                 f"Ocurrió un problema:\n\n{e}")
+
+
+def prueba_integracion():
+    idx = np.where(digits.target == 3)[0][0]
+    matriz = digits.images[idx]
+    img_simulada = Image.fromarray(
+        (255 - (matriz / 16.0) * 255).astype(np.uint8)
+    ).resize((280, 280))
+    pred, conf = predecir_digito(img_simulada)
+    print(f"\n[Prueba end-to-end] Esperado: 3 | Predicho: {pred} | Confianza: {conf:.1f}%")
+
+
+if __name__ == "__main__":
+    prueba_integracion()
+    root = tk.Tk()
+    app = AppDigitos(root)
+    root.mainloop()
