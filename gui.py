@@ -7,20 +7,14 @@ import tkinter as tk
 from PIL import Image, ImageDraw
 # Numpy se usa para manejar arreglos de numeros
 import numpy as np
-# pickle se usa para cargar el modelo entrenado
-import pickle
+
+from tensorflow import keras
 
 #--------------------------
 # Cargar el modelo y scaler
 #--------------------------
 # Cargar el modelo entrenado
-
-with open("modelo.pkl", "rb") as f:
-    modelo = pickle.load(f)
-
-# Cargar el scaler utilizado durante el entrenamiento
-with open("scaler.pkl", "rb") as f:
-    scaler = pickle.load(f)
+modelo = keras.models.load_model("modelo_combinado_mnist.h5")
 
 #-------------------------------
 # Clase principal de la interfaz
@@ -115,6 +109,14 @@ class DigitRecognizerGUI:
         )
         self.clear_button.grid(row=0, column=0, padx=20)
 
+        # Boton predecir
+        self.predict_button = tk.Button(self.button_frame, text="Predecir", font=("Arial", 14), width=15, command=self.predict_number)
+        self.predict_button.grid(row=0, column=1, padx=20)
+
+        # Label para mostrar resultado
+        self.result_label = tk.Label(self.root, text="Numero reconocido:", font=("Arial", 20), bg="lightgray")
+        self.result_label.pack(pady=20)
+
     #----------------------------------
     # Fucnion para dibujar en el canvas
     #----------------------------------
@@ -153,14 +155,6 @@ class DigitRecognizerGUI:
             # Crear nuevo objeto draw
             self.draws[i] = ImageDraw.Draw(self.images[i])
 
-        # Boton predecir
-        self.predict_button = tk.Button(self.button_frame, text="Predecir", font=("Arial", 14), width=15, command=self.predict_number)
-        self.predict_button.grid(row=0, column=1, padx=20)
-
-        # Label para mostrar resultado
-        self.result_label = tk.Label(self.root, text="Numero reconocido:", font=("Arial", 20), bg="lightgray")
-        self.result_label.pack(pady=20)
-
     #----------------------------------
     # Funcion para predecir los digitos
     #----------------------------------
@@ -170,26 +164,20 @@ class DigitRecognizerGUI:
 
         # Recorrer los 5 canvas
         for image in self.images:
-            # Redimensionar imagen a 8x8
-            resized_image = image.resize((8, 8))
+            # Redimensionar imagen a 28x28
+            resized_image = image.resize((28, 28))
 
-            # Convertir imagen a arreglo numpy
+            # convertir imagen a arreglo numpy
             img_array = np.array(resized_image)
 
-            # Invertir colores (si se ocupa)
-            img_array = 255 - img_array
+            # Normalizar valores de 0 a 1
+            img_normalizada = img_array / 255.0
 
-            # Normalizar valores de 0 - 16
-            img_normalizada = (img_array / 255.0) * 16.0
-
-            # Aplanar imagen
-            img_flat = img_normalizada.flatten()
-
-            # Aplicar scaler
-            img_scaled = scaler.transform([img_flat])
+            # Agregar dimension extra para TensorFlow
+            img_input = np.expand_dims(img_normalizada, axis=0)
 
             # Realizar prediccion
-            prediction = modelo.predict(img_scaled)[0]
+            prediction = np.predict(img_input, verbose=0)
 
             # Guardar resultado
             predicted_digits.append(str(prediction))
@@ -199,3 +187,12 @@ class DigitRecognizerGUI:
 
         # Mostrar resultado
         self.result_label.config(text=f"Numero reconocido: {final_number}")
+
+
+if __name__ == "__main__":
+
+    root = tk.Tk()
+
+    app = DigitRecognizerGUI(root)
+
+    root.mainloop()
