@@ -1,55 +1,65 @@
-import pickle
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import cross_val_score, train_test_split
+from tensorflow import keras
+from sklearn.model_selection import cross_val_score
+from sklearn.neural_network import MLPClassifier
 from sklearn import metrics
+from sklearn.model_selection import train_test_split
 
 from data_processing import cargar_dataset_original, cargar_imagenes_propias, combinar_datasets
 
-
 # EVALUATION.PY
-# Carga el modelo entrenado por el compañero 1, aplica validacion
-# cruzada y genera graficas de metricas de desempeno.
-# Requiere: modelo.pkl y scaler.pkl en la misma carpeta.
+# Carga el modelo entrenado y genera metricas
+# de desempeno y graficas.
+# Requiere: modelo_combinado_mnist.h5 en la misma carpeta.
 
+
+NOMBRE_MODELO = 'modelo_combinado_mnist.h5'
 
 
 def cargar_modelo():
-    print("Cargando modelo entrenado (modelo.pkl)...")
-    with open("modelo.pkl", "rb") as f:
-        modelo = pickle.load(f)
-
-    print("Cargando scaler (scaler.pkl)...")
-    with open("scaler.pkl", "rb") as f:
-        scaler = pickle.load(f)
-
-    print("  -> Modelo y scaler cargados correctamente.")
-    return modelo, scaler
+    print(f"Cargando modelo entrenado ({NOMBRE_MODELO})...")
+    modelo = keras.models.load_model(NOMBRE_MODELO)
+    print("  -> Modelo cargado correctamente.")
+    return modelo
 
 
-def preparar_datos(scaler):
-    # Cargamos y combinamos el dataset original con las imagenes propias
-    X_orig, y_orig = cargar_dataset_original()
-    X_prop, y_prop = cargar_imagenes_propias("./mis_digitos")
-    X, y = combinar_datasets(X_orig, y_orig, X_prop, y_prop)
-
-    # Usamos transform (no fit_transform) para respetar el scaler del entrenamiento
-    X_escalado = scaler.transform(X)
-
-    return X_escalado, y
+def preparar_datos():
+    # Cargamos MNIST y las imagenes propias y las combinamos
+    (x_train, y_train), (x_test, y_test) = cargar_dataset_original()
+    X_prop, y_prop = cargar_imagenes_propias()
+    x_train_aug, y_train_aug = combinar_datasets(x_train, y_train, X_prop, y_prop)
+    return x_train_aug, y_train_aug, x_test, y_test
 
 
-def validacion_cruzada(modelo, X, y, k=5):
+def validacion_cruzada_manual(modelo, X, y, k=5):
+    # Dividimos manualmente el dataset en k partes para validacion cruzada
+    # ya que keras no es compatible directamente con cross_val_score de sklearn
     print(f"\n--- Validacion Cruzada ({k} Folds) ---")
-    cv_scores = cross_val_score(modelo, X, y, cv=k)
 
-    for i, score in enumerate(cv_scores):
-        print(f"  Fold {i+1}: {score * 100:.2f}%")
+    tamano_fold = len(X) // k
+    scores = []
 
-    print(f"\n  Efectividad promedio: {cv_scores.mean() * 100:.2f}%")
-    print(f"  Desviacion estandar:  {cv_scores.std() * 100:.2f}%")
+    for i in range(k):
+        # Indices del fold de prueba
+        inicio = i * tamano_fold
+        fin    = inicio + tamano_fold
 
-    return cv_scores
+        # Separar datos de prueba y entrenamiento para este fold
+        X_val   = X[inicio:fin]
+        y_val   = y[inicio:fin]
+        X_train = np.concatenate([X[:inicio], X[fin:]], axis=0)
+        y_train = np.concatenate([y[:inicio], y[fin:]], axis=0)
+
+        # Evaluamos el modelo (sin reentrenar, solo medimos)
+        _, acc = modelo.evaluate(X_val, y_val, verbose=0)
+        scores.append(acc)
+        print(f"  Fold {i+1}: {acc * 100:.2f}%")
+
+    scores = np.array(scores)
+    print(f"\n  Efectividad promedio: {scores.mean() * 100:.2f}%")
+    print(f"  Desviacion estandar:  {scores.std() * 100:.2f}%")
+    return scores
 
 
 def grafica_validacion_cruzada(cv_scores):
@@ -87,7 +97,6 @@ def grafica_matriz_confusion(y_real, y_predicho):
     im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
     plt.colorbar(im, ax=ax)
 
-    # Etiquetas de los ejes
     clases = [str(i) for i in range(10)]
     ax.set_xticks(range(10))
     ax.set_yticks(range(10))
@@ -114,7 +123,7 @@ def grafica_matriz_confusion(y_real, y_predicho):
 def grafica_precision_recall(y_real, y_predicho):
     reporte = metrics.classification_report(y_real, y_predicho, output_dict=True)
 
-    digitos = [str(i) for i in range(10)]
+    digitos   = [str(i) for i in range(10)]
     precision = [reporte[d]['precision'] for d in digitos]
     recall    = [reporte[d]['recall']    for d in digitos]
 
@@ -132,7 +141,7 @@ def grafica_precision_recall(y_real, y_predicho):
     ax.set_xlabel('Digito')
     ax.set_title('Precision y Recall por Digito')
     ax.legend()
-    # Linea de referencia en 1.0 (rendimiento perfecto)
+    # Linea de referencia en 1.0
     ax.axhline(y=1.0, color='gray', linestyle='--', linewidth=0.8)
     plt.tight_layout()
     plt.savefig('grafica_precision_recall.png', dpi=150)
@@ -141,32 +150,32 @@ def grafica_precision_recall(y_real, y_predicho):
 
 
 if __name__ == "__main__":
-    # 1. Cargar modelo y scaler del compañero 1
-    modelo, scaler = cargar_modelo()
+    # 1. Cargar modelo
+    modelo = cargar_modelo()
 
-    # 2. Preparar dataset aumentado con las imagenes propias
-    X, y = preparar_datos(scaler)
+    # 2. Preparar dataset aumentado
+    x_train, y_train, x_test, y_test = preparar_datos()
 
-    # 3. Validacion cruzada y su grafica
-    cv_scores = validacion_cruzada(modelo, X, y, k=5)
+    # 3. Validacion cruzada manual sobre el conjunto de entrenamiento
+    cv_scores = validacion_cruzada_manual(modelo, x_train, y_train, k=5)
     grafica_validacion_cruzada(cv_scores)
 
-    # 4. Division para obtener predicciones y graficar metricas
-    _, X_test, _, y_test = train_test_split(
-        X, y, test_size=0.1, random_state=42, stratify=y
-    )
+    # 4. Predicciones sobre el conjunto de prueba de MNIST
+    print("\nGenerando predicciones sobre conjunto de prueba...")
+    predicciones = modelo.predict(x_test, verbose=0)
 
-    # 5. Predicciones sobre el conjunto de prueba
-    y_pred = modelo.predict(X_test)
+    # Convertir probabilidades a clase predicha (la de mayor probabilidad)
+    y_pred = np.argmax(predicciones, axis=1)
 
-    # 6. Metricas en consola
+    # 5. Metricas en consola
+    exactitud = metrics.accuracy_score(y_test, y_pred)
     print('\n==================================================')
-    print(f"EXACTITUD FINAL EN TEST: {modelo.score(X_test, y_test) * 100:.2f}%")
+    print(f"EXACTITUD FINAL EN TEST: {exactitud * 100:.2f}%")
     print('==================================================')
     print("\nReporte de Clasificacion completo:")
     print(metrics.classification_report(y_test, y_pred))
 
-    # 7. Graficas
+    # 6. Graficas
     print("\nGenerando graficas...")
     grafica_matriz_confusion(y_test, y_pred)
     grafica_precision_recall(y_test, y_pred)
