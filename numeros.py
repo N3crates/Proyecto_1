@@ -18,7 +18,7 @@ digits = load_digits()
 # 2. SECCIÓN DE AUMENTO DE DATOS
 # =====================================================================
 #Cuando se tenga la base de datos propia, cambiar el estado a False:
-usar_base_simulada = False
+usar_base_simulada = True
 
 if usar_base_simulada:
     print("Generando base simulada de alta fidelidad...")
