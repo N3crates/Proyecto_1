@@ -3,7 +3,6 @@ import os
 from PIL import Image
 from tensorflow import keras
 
-
 # DATA_PROCESSING.PY
 # Carga las imagenes propias, las adapta al formato 28x28 del dataset
 # MNIST y las combina con el dataset original para aumentar los datos.
@@ -32,26 +31,33 @@ def cargar_imagenes_propias(ruta_carpeta=RUTA_CARPETA_PROPIA):
     y_propias = []
 
     for digito in range(10):
-        # Cada digito es un archivo: 0.png, 1.png ... 9.png
-        ruta_imagen = os.path.join(ruta_carpeta, f"{digito}.png")
+        # Buscamos todos los archivos del digito: 0_1.png, 0_2.png ... 0_5.png
+        archivos = [
+            f for f in os.listdir(ruta_carpeta)
+            if f.startswith(f"{digito}_") and f.endswith(".png")
+        ]
 
-        if not os.path.exists(ruta_imagen):
-            print(f"  ADVERTENCIA: no se encontro '{ruta_imagen}', se omitira.")
+        if len(archivos) == 0:
+            print(f"  ADVERTENCIA: no se encontraron imagenes para el digito {digito}")
             continue
 
-        # Convertir a escala de grises y redimensionar a 28x28
-        img = Image.open(ruta_imagen).convert('L').resize((28, 28))
-        img_array = np.array(img).astype('float32')
+        for archivo in sorted(archivos):
+            ruta_imagen = os.path.join(ruta_carpeta, archivo)
 
-        # Descomentar si el fondo es blanco y el digito es negro
-        # img_array = 255 - img_array
+            # Convertir a escala de grises y redimensionar a 28x28
+            img = Image.open(ruta_imagen).convert('L').resize((28, 28))
+            img_array = np.array(img).astype('float32')
 
-        # Normalizar pixeles al rango 0-1 (igual que MNIST)
-        img_array = img_array / 255.0
+            # Descomentar si el fondo es blanco y el digito es negro
+            # img_array = 255 - img_array
 
-        X_propias.append(img_array)
-        y_propias.append(digito)
-        print(f"  -> Digito {digito}: cargado correctamente")
+            # Normalizar de rango 0-255 a rango 0-1 (igual que MNIST)
+            img_array = img_array / 255.0
+
+            X_propias.append(img_array)
+            y_propias.append(digito)
+
+        print(f"  -> Digito {digito}: {len(archivos)} imagen(es) cargada(s)")
 
     X_propias = np.array(X_propias)
     y_propias = np.array(y_propias)
