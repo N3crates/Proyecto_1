@@ -44,7 +44,7 @@ def cargar_imagenes_propias(ruta_carpeta=RUTA_CARPETA_PROPIA):
         img_array = np.array(img).astype('float32')
 
         # Descomentar si el fondo es blanco y el digito es negro
-        # img_array = 255 - img_array
+        img_array = 255 - img_array
 
         # Normalizar pixeles al rango 0-1 (igual que MNIST)
         img_array = img_array / 255.0

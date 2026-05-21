@@ -14,7 +14,7 @@ from tensorflow import keras
 # Cargar el modelo y scaler
 #--------------------------
 # Cargar el modelo entrenado
-modelo = keras.models.load_model("modelo_combinado_mnist.h5")
+modelo = keras.models.load_model("modelo_red_convolucional.h5")
 
 #-------------------------------
 # Clase principal de la interfaz
