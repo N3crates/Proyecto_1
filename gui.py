@@ -177,7 +177,8 @@ class DigitRecognizerGUI:
             img_input = np.expand_dims(img_normalizada, axis=0)
 
             # Realizar prediccion
-            prediction = np.predict(img_input, verbose=0)
+            prediction = modelo.predict(img_input, verbose=0)
+            prediction = np.argmax(prediction)
 
             # Guardar resultado
             predicted_digits.append(str(prediction))
@@ -187,12 +188,3 @@ class DigitRecognizerGUI:
 
         # Mostrar resultado
         self.result_label.config(text=f"Numero reconocido: {final_number}")
-
-
-if __name__ == "__main__":
-
-    root = tk.Tk()
-
-    app = DigitRecognizerGUI(root)
-
-    root.mainloop()

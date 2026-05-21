@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -296,4 +295,3 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = AppDigitos(root)
     root.mainloop()
->>>>>>> c5b09f3c05040a902c59d04f193f65609bd63c13
