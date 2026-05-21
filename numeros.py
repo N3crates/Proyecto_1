@@ -97,7 +97,7 @@ print(metrics.classification_report(y_test, yout))
 
 print("Matriz de Confusión Resultante:")
 print(metrics.confusion_matrix(y_test, yout))
-=======
+ 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
