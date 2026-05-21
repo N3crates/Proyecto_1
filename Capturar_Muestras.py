@@ -2,7 +2,7 @@ import tkinter as tk
 from PIL import Image, ImageDraw
 import os
 
-# CAPTURAR_DIGITOS.PY
+# CAPTURAR_MUESTRAS.PY
 # Herramienta para dibujar y guardar 5 muestras de cada digito (0-9)
 # Guarda las imagenes en la carpeta mis_digitos/ junto a este archivo
 
