@@ -9,30 +9,24 @@ NOMBRE_MODELO = 'modelo_combinado_mnist.h5'
 RUTA_CARPETA_PROPIA = 'mis_digitos'
 
 def cargar_muestras_propias_reales():
-    """
-    Busca la carpeta 'mis_digitos'. Si existe, procesa los archivos 0.png a 9.png.
-    Si no existe, devuelve arreglos vacíos para trabajar solo con el dataset original   .
-    """
     X_propias = []
     y_propias = []
     
     if os.path.exists(RUTA_CARPETA_PROPIA):
-        print(f"\n[DETECTADO] Cargando y adaptando tus 10 imágenes desde '{RUTA_CARPETA_PROPIA}'...")
+        print(f"\n[DETECTADO] Cargando imagenes desde '{RUTA_CARPETA_PROPIA}'...")
         for i in range(10):
-            nombre_archivo = os.path.join(RUTA_CARPETA_PROPIA, f"{i}.png")
-            if os.path.exists(nombre_archivo):
-                # Procesar con Pillow para forzar escala de grises y tamaño 28x28
-                img = Image.open(nombre_archivo).convert('L')
-                img = img.resize((28, 28))
-                img_array = np.array(img) / 255.0  # Normalizar píxeles a escala 0-1
-                
+            archivos = sorted([
+                f for f in os.listdir(RUTA_CARPETA_PROPIA)
+                if f.startswith(f"{i}_") and f.endswith(".png")
+            ])
+            for archivo in archivos:
+                ruta = os.path.join(RUTA_CARPETA_PROPIA, archivo)
+                img = Image.open(ruta).convert('L').resize((28, 28))
+                img_array = np.array(img) / 255.0
                 X_propias.append(img_array)
                 y_propias.append(i)
-            else:
-                print(f"[ADVERTENCIA] Falta el archivo '{nombre_archivo}', se omitirá.")
-                
-    return np.array(X_propias), np.array(y_propias)
 
+    return np.array(X_propias), np.array(y_propias)
 
 # =====================================================================
 # 1. CARGA DE DATOS ORIGINALES
