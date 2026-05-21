@@ -44,14 +44,9 @@ def cargar_imagenes_propias(ruta_carpeta=RUTA_CARPETA_PROPIA):
         for archivo in sorted(archivos):
             ruta_imagen = os.path.join(ruta_carpeta, archivo)
 
-<<<<<<< HEAD
-        # Descomentar si el fondo es blanco y el digito es negro
-        img_array = 255 - img_array
-=======
             # Convertir a escala de grises y redimensionar a 28x28
             img = Image.open(ruta_imagen).convert('L').resize((28, 28))
             img_array = np.array(img).astype('float32')
->>>>>>> 253f6c280b0308633f3e31be5376576c41e52d5f
 
             # Descomentar si el fondo es blanco y el digito es negro
             # img_array = 255 - img_array

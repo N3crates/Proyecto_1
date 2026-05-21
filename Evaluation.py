@@ -14,7 +14,7 @@ from data_processing import cargar_dataset_original, cargar_imagenes_propias, co
 # Requiere: modelo_combinado_mnist.h5 en la misma carpeta.
 
 
-NOMBRE_MODELO = 'modelo_combinado_mnist.h5'
+NOMBRE_MODELO = 'modelo_red_convolucional.h5'
 
 
 def cargar_modelo():
